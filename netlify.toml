@@ -1,6 +1,10 @@
 [build]
-  command = "flutter pub get && flutter build web --release"
+  command = """
+    git clone https://github.com/flutter/flutter.git -b stable /opt/buildhome/flutter
+    export PATH="$PATH:/opt/buildhome/flutter/bin"
+    flutter precache --android
+    flutter doctor -v
+    flutter pub get
+    flutter build web --release
+  """
   publish = "build/web"
-
-[build.environment]
-  NODE_VERSION = "18"
