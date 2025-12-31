@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../models/game.dart';
+import '../models/user.dart';
 
 class GameProvider extends ChangeNotifier {
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
@@ -13,14 +14,27 @@ class GameProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Stream<List<Game>> getGamesStream() {
-    return _database.child('games').onValue.map((event) {
-      final gamesMap = event.snapshot.value as Map<dynamic, dynamic>?;
-      if (gamesMap == null) return <Game>[];
+  Stream<List<Game>> getUserGames(String uid) {
+    return _database.child('users').child(uid).onValue.asyncMap((userEvent) async {
+      if (!userEvent.snapshot.exists) return <Game>[];
       
-      final games = gamesMap.entries
-          .map((entry) => Game.fromJson(entry.key.toString(), entry.value))
-          .toList();
+      final userData = userEvent.snapshot.value as Map<dynamic, dynamic>;
+      final user = AppUser.fromJson(uid, userData);
+      
+      final allGameIds = <String>{};
+      allGameIds.addAll(user.createdGames.keys);
+      allGameIds.addAll(user.sharedGames.keys);
+      
+      if (allGameIds.isEmpty) return <Game>[];
+      
+      final games = <Game>[];
+      for (final gameId in allGameIds) {
+        final gameSnapshot = await _database.child('games').child(gameId).get();
+        if (gameSnapshot.exists) {
+          final game = Game.fromJson(gameId, gameSnapshot.value as Map<dynamic, dynamic>);
+          games.add(game);
+        }
+      }
       
       games.sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
       return games;
@@ -28,30 +42,77 @@ class GameProvider extends ChangeNotifier {
   }
 
   Stream<Game?> getGameStream(String gameId) {
-    return _database.child('games/$gameId').onValue.map((event) {
+    return _database.child('games').child(gameId).onValue.map((event) {
       final gameData = event.snapshot.value as Map<dynamic, dynamic>?;
       if (gameData == null) return null;
       return Game.fromJson(gameId, gameData);
     });
   }
 
-  Future<void> createGame(String name) async {
+  Future<void> createGame(String name, String ownerId) async {
     try {
       _setLoading(true);
       final now = DateTime.now();
       final gameRef = _database.child('games').push();
+      final gameId = gameRef.key!;
       
       await gameRef.set({
         'name': name,
+        'ownerId': ownerId,
+        'sharedWith': {},
         'createdAt': now.millisecondsSinceEpoch,
         'modifiedAt': now.millisecondsSinceEpoch,
       });
+      
+      // Ensure user document exists and add to user's created games
+      final userRef = _database.child('users').child(ownerId);
+      final userSnapshot = await userRef.get();
+      
+      if (!userSnapshot.exists) {
+        // Create minimal user document if it doesn't exist
+        await userRef.set({
+          'createdGames': {gameId: true},
+          'sharedGames': {},
+        });
+      } else {
+        await userRef.child('createdGames').child(gameId).set(true);
+      }
       
       _clearError();
     } catch (e) {
       _setError('Failed to create game: $e');
     } finally {
       _setLoading(false);
+    }
+  }
+
+  Future<void> shareGame(String gameId, List<String> userIds) async {
+    try {
+      final updates = <String, dynamic>{};
+      
+      for (final userId in userIds) {
+        updates['games/$gameId/sharedWith/$userId'] = true;
+        updates['users/$userId/sharedGames/$gameId'] = true;
+      }
+      
+      await _database.update(updates);
+    } catch (e) {
+      _setError('Failed to share game: $e');
+    }
+  }
+
+  Future<List<AppUser>> getAllUsers() async {
+    try {
+      final snapshot = await _database.child('users').get();
+      if (!snapshot.exists) return [];
+      
+      final usersData = snapshot.value as Map<dynamic, dynamic>;
+      return usersData.entries
+          .map((entry) => AppUser.fromJson(entry.key.toString(), entry.value))
+          .toList();
+    } catch (e) {
+      _setError('Failed to load users: $e');
+      return [];
     }
   }
 

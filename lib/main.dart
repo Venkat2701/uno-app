@@ -1,31 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'screens/home_page.dart';
-import 'providers/game_provider.dart';
-import 'theme/app_theme.dart';
 import 'firebase_options.dart';
+import 'providers/auth_provider.dart';
+import 'providers/game_provider.dart';
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const UnoScoreApp());
+  runApp(const MyApp());
 }
 
-class UnoScoreApp extends StatelessWidget {
-  const UnoScoreApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => GameProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => GameProvider()),
+      ],
       child: MaterialApp(
         title: 'UNO Score Tracker',
-        theme: AppTheme.theme,
-        home: const HomePage(),
         debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          primaryColor: const Color(0xFF4A90E2),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF4A90E2),
+            primary: const Color(0xFF4A90E2),
+          ),
+          useMaterial3: true,
+          fontFamily: 'Roboto',
+        ),
+        home: const SplashScreen(),
       ),
     );
   }

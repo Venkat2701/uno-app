@@ -1,6 +1,8 @@
 class Game {
   final String id;
   final String name;
+  final String ownerId;
+  final Map<String, bool> sharedWith;
   final DateTime createdAt;
   final DateTime modifiedAt;
   final Map<String, String> players;
@@ -9,6 +11,8 @@ class Game {
   Game({
     required this.id,
     required this.name,
+    required this.ownerId,
+    this.sharedWith = const {},
     required this.createdAt,
     required this.modifiedAt,
     this.players = const {},
@@ -35,6 +39,8 @@ class Game {
     return Game(
       id: id,
       name: json['name'] ?? '',
+      ownerId: json['ownerId'] ?? '',
+      sharedWith: Map<String, bool>.from(json['sharedWith'] ?? {}),
       createdAt: DateTime.fromMillisecondsSinceEpoch(json['createdAt'] ?? 0),
       modifiedAt: DateTime.fromMillisecondsSinceEpoch(json['modifiedAt'] ?? 0),
       players: playersMap,
@@ -45,6 +51,8 @@ class Game {
   Map<String, dynamic> toJson() {
     return {
       'name': name,
+      'ownerId': ownerId,
+      'sharedWith': sharedWith,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'modifiedAt': modifiedAt.millisecondsSinceEpoch,
       'players': players,

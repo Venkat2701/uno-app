@@ -15,6 +15,19 @@ class GameCard extends StatelessWidget {
     required this.index,
   });
 
+  int _getPlayerCount(Game game) {
+    if (game.players.isNotEmpty) {
+      return game.players.length;
+    }
+    
+    // If no players in game.players, count unique players from rounds
+    final uniquePlayers = <String>{};
+    for (final round in game.rounds.values) {
+      uniquePlayers.addAll(round.playerScores.keys);
+    }
+    return uniquePlayers.length;
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('MMM dd, yyyy');
@@ -101,7 +114,7 @@ class GameCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '${game.players.length} players',
+                          '${_getPlayerCount(game)} players',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[600],

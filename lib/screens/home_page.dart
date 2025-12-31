@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../providers/game_provider.dart';
+import '../providers/auth_provider.dart';
 import '../models/game.dart';
 import '../widgets/game_card.dart';
 import 'create_game_page.dart';
 import 'game_dashboard.dart';
+import 'login_screen.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -33,30 +35,83 @@ class HomePage extends StatelessWidget {
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: const Text(
-                  'UNO Games List',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Roboto',
-                    letterSpacing: 1.2,
-                    shadows: [
-                      Shadow(
-                        offset: Offset(0, 2),
-                        blurRadius: 4,
-                        color: Colors.black26,
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Consumer<AuthProvider>(
+                        builder: (context, authProvider, child) {
+                          // Try username first, then email local part, then 'User'
+                          String displayName = 'User';
+                          if (authProvider.appUser?.username.isNotEmpty == true) {
+                            displayName = authProvider.appUser!.username;
+                          } else if (authProvider.user?.email != null) {
+                            displayName = authProvider.user!.email!.split('@')[0];
+                          }
+                          
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'UNO Games List',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Roboto',
+                                  letterSpacing: 1.2,
+                                  shadows: [
+                                    Shadow(
+                                      offset: Offset(0, 2),
+                                      blurRadius: 4,
+                                      color: Colors.black26,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Hi $displayName!',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 16,
+                                  fontFamily: 'Roboto',
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.logout, color: Colors.white, size: 28),
+                      onPressed: () async {
+                        await context.read<AuthProvider>().logout();
+                        if (context.mounted) {
+                          Navigator.pushReplacement(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
+                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                return FadeTransition(opacity: animation, child: child);
+                              },
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ),
               Expanded(
-                child: Consumer<GameProvider>(
-                  builder: (context, gameProvider, child) {
+                child: Consumer2<GameProvider, AuthProvider>(
+                  builder: (context, gameProvider, authProvider, child) {
+                    if (authProvider.user == null) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
                     return StreamBuilder<List<Game>>(
-                      stream: gameProvider.getGamesStream(),
+                      stream: gameProvider.getUserGames(authProvider.user!.uid),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return const Center(

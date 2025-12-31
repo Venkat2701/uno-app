@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../providers/game_provider.dart';
+import '../providers/auth_provider.dart';
 
 class CreateGamePage extends StatefulWidget {
   const CreateGamePage({super.key});
@@ -29,15 +30,21 @@ class _CreateGamePageState extends State<CreateGamePage> {
     });
 
     try {
-      await context.read<GameProvider>().createGame(_nameController.text.trim());
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Game created successfully!'),
-            backgroundColor: Colors.green,
-          ),
+      final authProvider = context.read<AuthProvider>();
+      if (authProvider.user != null) {
+        await context.read<GameProvider>().createGame(
+          _nameController.text.trim(),
+          authProvider.user!.uid,
         );
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Game created successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
