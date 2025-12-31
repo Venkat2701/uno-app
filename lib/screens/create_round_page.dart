@@ -131,21 +131,18 @@ class _CreateRoundPageState extends State<CreateRoundPage> {
     });
 
     try {
-      // Add new players to game if any
       if (newPlayerNames.isNotEmpty) {
         final currentPlayerCount = widget.game.players.length;
         final newPlayersData = <String, String>{};
         
-        // Add existing players
         widget.game.players.forEach((key, value) {
           newPlayersData[key] = value;
         });
         
-        // Add new players
         for (int i = 0; i < newPlayerNames.length; i++) {
           final newPlayerId = 'player_${currentPlayerCount + i}';
           newPlayersData[newPlayerId] = newPlayerNames[i];
-          _selectedPlayerIds.add(newPlayerId); // Auto-select new players
+          _selectedPlayerIds.add(newPlayerId);
         }
         
         await context.read<GameProvider>().updateGamePlayers(widget.game.id, newPlayersData);
@@ -190,74 +187,119 @@ class _CreateRoundPageState extends State<CreateRoundPage> {
     final nextRoundNumber = widget.game.rounds.length + 1;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Create Round $nextRoundNumber'),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: NetworkImage('https://images.unsplash.com/photo-1518611012118-696072aa579a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'),
+            fit: BoxFit.cover,
+            opacity: 0.1,
+          ),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF4A90E2),
+              Color(0xFFE8F4FD),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.casino,
-                          color: Theme.of(context).primaryColor,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Round $nextRoundNumber',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _showPlayerForm 
-                          ? 'Add players for the first round'
-                          : 'Select players for this round',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
+                    Expanded(
+                      child: Text(
+                        'Create Round $nextRoundNumber',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Roboto',
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
+                    const SizedBox(width: 48),
                   ],
                 ),
               ),
-            ).animate().slideY(begin: -0.3, duration: 400.ms).fadeIn(),
-            const SizedBox(height: 16),
-            Expanded(
-              child: _showPlayerForm ? _buildPlayerForm() : _buildPlayerSelection(),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _createRound,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.casino,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Round $nextRoundNumber',
+                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _showPlayerForm 
+                                    ? 'Add players for the first round'
+                                    : 'Select players for this round',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ).animate().slideY(begin: -0.3, duration: 400.ms).fadeIn(),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: _showPlayerForm ? _buildPlayerForm() : _buildPlayerSelection(),
                       ),
-                    )
-                  : const Text(
-                      'Create Round',
-                      style: TextStyle(fontSize: 16),
-                    ),
-            ).animate(delay: 400.ms).slideY(begin: 0.3, duration: 400.ms).fadeIn(),
-          ],
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _createRound,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'Create Round',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                      ).animate(delay: 400.ms).slideY(begin: 0.3, duration: 400.ms).fadeIn(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -363,91 +405,85 @@ class _CreateRoundPageState extends State<CreateRoundPage> {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: Column(
-                children: [
-                  // Existing players section
-                  if (widget.game.players.isNotEmpty) ...[
-                    Text(
-                      'Existing Players',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[700],
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.game.players.isNotEmpty) ...[
+                      Text(
+                        'Existing Players',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[700],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...widget.game.players.entries.map((entry) {
-                      final playerId = entry.key;
-                      final playerName = entry.value;
-                      final index = widget.game.players.keys.toList().indexOf(playerId);
-                      
-                      return CheckboxListTile(
-                        title: Text(playerName),
-                        value: _selectedPlayerIds.contains(playerId),
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value == true) {
-                              _selectedPlayerIds.add(playerId);
-                            } else {
-                              _selectedPlayerIds.remove(playerId);
-                            }
-                          });
-                        },
-                        activeColor: Theme.of(context).primaryColor,
-                      ).animate(delay: Duration(milliseconds: index * 100))
-                          .slideX(begin: 0.3, duration: 300.ms)
-                          .fadeIn();
-                    }).toList(),
-                  ],
-                  // New players section
-                  if (_playerControllers.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      'New Players',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[700],
+                      const SizedBox(height: 8),
+                      ...widget.game.players.entries.map((entry) {
+                        final playerId = entry.key;
+                        final playerName = entry.value;
+                        final index = widget.game.players.keys.toList().indexOf(playerId);
+                        
+                        return CheckboxListTile(
+                          title: Text(playerName),
+                          value: _selectedPlayerIds.contains(playerId),
+                          onChanged: (bool? value) {
+                            setState(() {
+                              if (value == true) {
+                                _selectedPlayerIds.add(playerId);
+                              } else {
+                                _selectedPlayerIds.remove(playerId);
+                              }
+                            });
+                          },
+                          activeColor: Theme.of(context).primaryColor,
+                        ).animate(delay: Duration(milliseconds: index * 100))
+                            .slideX(begin: 0.3, duration: 300.ms)
+                            .fadeIn();
+                      }).toList(),
+                    ],
+                    if (_playerControllers.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        'New Players',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[700],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: _playerControllers.length,
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _playerControllers[index],
-                                    decoration: InputDecoration(
-                                      labelText: 'New Player ${index + 1}',
-                                      prefixIcon: const Icon(Icons.person_add),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
+                      const SizedBox(height: 8),
+                      ...List.generate(_playerControllers.length, (index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _playerControllers[index],
+                                  decoration: InputDecoration(
+                                    labelText: 'New Player ${index + 1}',
+                                    prefixIcon: const Icon(Icons.person_add),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
-                                    textCapitalization: TextCapitalization.words,
                                   ),
+                                  textCapitalization: TextCapitalization.words,
                                 ),
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  onPressed: () => _removePlayerController(index),
-                                  icon: const Icon(Icons.remove_circle),
-                                  color: Colors.red,
-                                ),
-                              ],
-                            ),
-                          ).animate(delay: Duration(milliseconds: index * 100))
-                              .slideX(begin: 0.3, duration: 300.ms)
-                              .fadeIn();
-                        },
-                      ),
-                    ),
-                  ] else ...[
-                    Expanded(child: Container()),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                onPressed: () => _removePlayerController(index),
+                                icon: const Icon(Icons.remove_circle),
+                                color: Colors.red,
+                              ),
+                            ],
+                          ),
+                        ).animate(delay: Duration(milliseconds: index * 100))
+                            .slideX(begin: 0.3, duration: 300.ms)
+                            .fadeIn();
+                      }),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ],
