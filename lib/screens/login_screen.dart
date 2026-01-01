@@ -199,6 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
                             decoration: InputDecoration(
                               labelText: 'Email',
                               prefixIcon: const Icon(Icons.email_outlined),
@@ -224,6 +225,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           TextFormField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) => _submit(),
                             decoration: InputDecoration(
                               labelText: 'Password',
                               prefixIcon: const Icon(Icons.lock_outlined),
@@ -322,9 +325,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         Text(
                           _isLogin ? "Don't have an account? " : "Already have an account? ",
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
+                          style: const TextStyle(
+                            color: Color(0xFF1565C0),
                             fontSize: 16,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         TextButton(
@@ -336,7 +340,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Text(
                             _isLogin ? 'REGISTER' : 'LOGIN',
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: Color(0xFF0D47A1),
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),

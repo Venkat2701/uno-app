@@ -16,7 +16,14 @@ class GameProvider extends ChangeNotifier {
 
   Stream<List<Game>> getUserGames(String uid) {
     return _database.child('users').child(uid).onValue.asyncMap((userEvent) async {
-      if (!userEvent.snapshot.exists) return <Game>[];
+      // If user document doesn't exist, create it and return empty list
+      if (!userEvent.snapshot.exists) {
+        await _database.child('users').child(uid).set({
+          'createdGames': {},
+          'sharedGames': {},
+        });
+        return <Game>[];
+      }
       
       final userData = userEvent.snapshot.value as Map<dynamic, dynamic>;
       final user = AppUser.fromJson(uid, userData);
@@ -90,9 +97,18 @@ class GameProvider extends ChangeNotifier {
     try {
       final updates = <String, dynamic>{};
       
+      // Ensure all user documents exist before sharing
       for (final userId in userIds) {
+        final userSnapshot = await _database.child('users').child(userId).get();
+        if (!userSnapshot.exists) {
+          await _database.child('users').child(userId).set({
+            'createdGames': {},
+            'sharedGames': {gameId: true},
+          });
+        } else {
+          updates['users/$userId/sharedGames/$gameId'] = true;
+        }
         updates['games/$gameId/sharedWith/$userId'] = true;
-        updates['users/$userId/sharedGames/$gameId'] = true;
       }
       
       await _database.update(updates);
@@ -178,6 +194,34 @@ class GameProvider extends ChangeNotifier {
       await _database.child('games/$gameId/modifiedAt').set(DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
       _setError('Failed to update players: $e');
+    }
+  }
+
+  Future<void> deleteGame(String gameId, String ownerId) async {
+    try {
+      final updates = <String, dynamic>{};
+      
+      // Remove game from games collection
+      updates['games/$gameId'] = null;
+      
+      // Remove game from owner's createdGames
+      updates['users/$ownerId/createdGames/$gameId'] = null;
+      
+      // Get game data to find shared users
+      final gameSnapshot = await _database.child('games').child(gameId).get();
+      if (gameSnapshot.exists) {
+        final gameData = gameSnapshot.value as Map<dynamic, dynamic>;
+        final sharedWith = Map<String, bool>.from(gameData['sharedWith'] ?? {});
+        
+        // Remove game from all shared users
+        for (final userId in sharedWith.keys) {
+          updates['users/$userId/sharedGames/$gameId'] = null;
+        }
+      }
+      
+      await _database.update(updates);
+    } catch (e) {
+      _setError('Failed to delete game: $e');
     }
   }
 
