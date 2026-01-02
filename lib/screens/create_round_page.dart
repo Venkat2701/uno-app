@@ -439,7 +439,7 @@ class _CreateRoundPageState extends State<CreateRoundPage> {
                         ).animate(delay: Duration(milliseconds: index * 100))
                             .slideX(begin: 0.3, duration: 300.ms)
                             .fadeIn();
-                      }).toList(),
+                      }),
                     ],
                     if (_playerControllers.isNotEmpty) ...[
                       const SizedBox(height: 16),

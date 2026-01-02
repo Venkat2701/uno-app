@@ -32,18 +32,37 @@ class _ShareGameDialogState extends State<ShareGameDialog> {
       final users = await context.read<GameProvider>().getAllUsers();
       final currentUserId = context.read<AuthProvider>().user?.uid;
       
-      // Get fresh game data to check current shared users
-      final gameSnapshot = await FirebaseDatabase.instance.ref('games/${widget.game.id}').get();
-      final currentSharedWith = gameSnapshot.exists 
-          ? Map<String, bool>.from((gameSnapshot.value as Map)['sharedWith'] ?? {})
-          : <String, bool>{};
+      final excludedUserIds = <String>{currentUserId!};
+      
+      // Add users who already have access to the game
+      excludedUserIds.addAll(widget.game.sharedWith.keys);
+      
+      // Get users with pending notifications for this game
+      try {
+        final notificationsSnapshot = await FirebaseDatabase.instance.ref()
+            .child('notifications')
+            .get();
+        
+        if (notificationsSnapshot.exists) {
+          final notificationsData = notificationsSnapshot.value as Map<dynamic, dynamic>;
+          for (final notification in notificationsData.values) {
+            final notificationMap = notification as Map<dynamic, dynamic>;
+            if (notificationMap['gameId'] == widget.game.id) {
+              excludedUserIds.add(notificationMap['toUserId'] as String);
+            }
+          }
+        }
+      } catch (e) {
+        print('Error loading notifications: $e');
+      }
       
       setState(() {
-        _users = users.where((user) => user.uid != currentUserId).toList();
-        _selectedUserIds = Set<String>.from(currentSharedWith.keys);
+        _users = users.where((user) => !excludedUserIds.contains(user.uid)).toList();
+        _selectedUserIds = <String>{};
         _isLoadingUsers = false;
       });
     } catch (e) {
+      print('Error loading users: $e');
       setState(() => _isLoadingUsers = false);
     }
   }
@@ -54,14 +73,24 @@ class _ShareGameDialogState extends State<ShareGameDialog> {
     setState(() => _isLoading = true);
 
     try {
-      // Use actual user UIDs, not emails
-      await context.read<GameProvider>().shareGame(widget.game.id, _selectedUserIds.toList());
+      final authProvider = context.read<AuthProvider>();
+      final currentUser = authProvider.user!;
+      final currentUserName = currentUser.displayName ?? currentUser.email?.split('@')[0] ?? 'Unknown';
+      
+      // Use the updated shareGame method with notification creation
+      await context.read<GameProvider>().shareGame(
+        widget.game.id,
+        widget.game.name,
+        currentUser.uid,
+        currentUserName,
+        _selectedUserIds.toList(),
+      );
       
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Game shared with ${_selectedUserIds.length} user(s)'),
+            content: Text('Game share requests sent to ${_selectedUserIds.length} user(s)'),
             backgroundColor: Colors.green,
           ),
         );

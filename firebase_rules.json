@@ -12,8 +12,17 @@
     "games": {
       "$gameId": {
         ".read": "auth != null && (root.child('games').child($gameId).child('ownerId').val() == auth.uid || root.child('games').child($gameId).child('sharedWith').child(auth.uid).exists())",
-        ".write": "auth != null && (newData.child('ownerId').val() == auth.uid || root.child('games').child($gameId).child('ownerId').val() == auth.uid)"
+        ".write": "auth != null && (newData.child('ownerId').val() == auth.uid || root.child('games').child($gameId).child('ownerId').val() == auth.uid)",
+        "sharedWith": {
+          "$userId": {
+            ".write": "auth != null && auth.uid == $userId"
+          }
+        }
       }
+    },
+    "notifications": {
+      ".read": "auth != null",
+      ".write": "auth != null"
     }
   }
 }

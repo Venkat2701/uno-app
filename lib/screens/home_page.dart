@@ -29,202 +29,167 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: NetworkImage('https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'),
-            fit: BoxFit.cover,
-            opacity: 0.1,
-          ),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF4A90E2),
-              Color(0xFFE8F4FD),
-            ],
-          ),
+    print('HomePage build called - this should NOT appear if MainNavigation is working');
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: NetworkImage('https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'),
+          fit: BoxFit.cover,
+          opacity: 0.1,
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Consumer<AuthProvider>(
-                        builder: (context, authProvider, child) {
-                          // Try username first, then email local part, then 'User'
-                          String displayName = 'User';
-                          if (authProvider.appUser?.username.isNotEmpty == true) {
-                            displayName = authProvider.appUser!.username;
-                          } else if (authProvider.user?.email != null) {
-                            displayName = authProvider.user!.email!.split('@')[0];
-                          }
-                          
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'UNO Games List',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'Roboto',
-                                  letterSpacing: 1.2,
-                                  shadows: [
-                                    Shadow(
-                                      offset: Offset(0, 2),
-                                      blurRadius: 4,
-                                      color: Colors.black26,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Hi $displayName!',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.9),
-                                  fontSize: 16,
-                                  fontFamily: 'Roboto',
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.logout, color: Colors.white, size: 28),
-                      onPressed: () async {
-                        await context.read<AuthProvider>().logout();
-                        if (context.mounted) {
-                          Navigator.pushReplacement(
-                            context,
-                            PageRouteBuilder(
-                              pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
-                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                return FadeTransition(opacity: animation, child: child);
-                              },
-                            ),
-                          );
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF4A90E2),
+            Color(0xFFE8F4FD),
+          ],
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Consumer<AuthProvider>(
+                      builder: (context, authProvider, child) {
+                        // Try username first, then email local part, then 'User'
+                        String displayName = 'User';
+                        if (authProvider.appUser?.username.isNotEmpty == true) {
+                          displayName = authProvider.appUser!.username;
+                        } else if (authProvider.user?.email != null) {
+                          displayName = authProvider.user!.email!.split('@')[0];
                         }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Consumer2<GameProvider, AuthProvider>(
-                  builder: (context, gameProvider, authProvider, child) {
-                    if (authProvider.user == null) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    return StreamBuilder<List<Game>>(
-                      stream: gameProvider.getUserGames(authProvider.user!.uid),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-
-                        if (snapshot.hasError) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.error_outline,
-                                  size: 64,
-                                  color: Colors.red[300],
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Error loading games',
-                                  style: Theme.of(context).textTheme.headlineSmall,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  snapshot.error.toString(),
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
-                        final games = snapshot.data ?? [];
-                        final filteredGames = _filterGames(games, authProvider.user!.uid);
-
+                        
                         return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Filter chips - always visible
-                            Container(
-                              height: 50,
-                              margin: const EdgeInsets.symmetric(vertical: 8),
-                              child: ListView(
-                                scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                children: _buildFilterChips(games, authProvider.user!.uid),
+                            const Text(
+                              'UNO Games List',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Roboto',
+                                letterSpacing: 1.2,
+                                shadows: [
+                                  Shadow(
+                                    offset: Offset(0, 2),
+                                    blurRadius: 4,
+                                    color: Colors.black26,
+                                  ),
+                                ],
                               ),
                             ),
-                            // Games list or empty state
-                            Expanded(
-                              child: _buildGamesList(games, filteredGames, gameProvider, authProvider),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Hi $displayName!',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 16,
+                                fontFamily: 'Roboto',
+                              ),
                             ),
                           ],
                         );
                       },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF4A90E2).withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) =>
-                    const CreateGamePage(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  return ScaleTransition(
-                    scale: animation.drive(
-                      Tween(begin: 0.0, end: 1.0).chain(
-                        CurveTween(curve: Curves.elasticOut),
-                      ),
                     ),
-                    child: child,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.logout, color: Colors.white, size: 28),
+                    onPressed: () async {
+                      await context.read<AuthProvider>().logout();
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
+                            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                              return FadeTransition(opacity: animation, child: child);
+                            },
+                          ),
+                          (route) => false,
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Consumer2<GameProvider, AuthProvider>(
+                builder: (context, gameProvider, authProvider, child) {
+                  if (authProvider.user == null) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  return StreamBuilder<List<Game>>(
+                    stream: gameProvider.getUserGames(authProvider.user!.uid),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: Colors.red[300],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Error loading games',
+                                style: Theme.of(context).textTheme.headlineSmall,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                snapshot.error.toString(),
+                                style: Theme.of(context).textTheme.bodyMedium,
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      final games = snapshot.data ?? [];
+                      final filteredGames = _filterGames(games, authProvider.user!.uid);
+
+                      return Column(
+                        children: [
+                          // Filter chips - always visible
+                          Container(
+                            height: 50,
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              children: _buildFilterChips(games, authProvider.user!.uid),
+                            ),
+                          ),
+                          // Games list or empty state
+                          Expanded(
+                            child: _buildGamesList(games, filteredGames, gameProvider, authProvider),
+                          ),
+                        ],
+                      );
+                    },
                   );
                 },
               ),
-            );
-          },
-          backgroundColor: const Color(0xFF4A90E2),
-          child: const Icon(Icons.add, color: Colors.white, size: 28),
+            ),
+          ],
         ),
-      ).animate().scale(delay: 800.ms, duration: 400.ms),
+      ),
     );
   }
 
@@ -298,11 +263,11 @@ class _HomePageState extends State<HomePage> {
           final game = filteredGames[index];
           final isOwner = game.ownerId == authProvider.user!.uid;
           
-          if (isOwner) {
-            return Dismissible(
-              key: Key(game.id),
-              direction: DismissDirection.endToStart,
-              confirmDismiss: (direction) async {
+          return Dismissible(
+            key: Key(game.id),
+            direction: isOwner ? DismissDirection.endToStart : DismissDirection.startToEnd,
+            confirmDismiss: (direction) async {
+              if (isOwner) {
                 return await showDialog<bool>(
                   context: context,
                   builder: (context) => AlertDialog(
@@ -320,8 +285,28 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 );
-              },
-              onDismissed: (direction) async {
+              } else {
+                return await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Remove Shared Game'),
+                    content: Text('Remove "${game.name}" from your games list?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('No'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Yes', style: TextStyle(color: Colors.orange)),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            },
+            onDismissed: (direction) async {
+              if (isOwner) {
                 await gameProvider.deleteGame(game.id, authProvider.user!.uid);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -331,30 +316,37 @@ class _HomePageState extends State<HomePage> {
                     ),
                   );
                 }
-              },
-              background: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 20),
-                color: Colors.red,
-                child: const Icon(
-                  Icons.delete,
-                  color: Colors.white,
-                  size: 30,
-                ),
+              } else {
+                await gameProvider.removeSharedGame(game.id, authProvider.user!.uid);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('"${game.name}" removed from your list'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+              }
+            },
+            background: Container(
+              alignment: isOwner ? Alignment.centerRight : Alignment.centerLeft,
+              padding: EdgeInsets.only(
+                right: isOwner ? 20 : 0,
+                left: isOwner ? 0 : 20,
               ),
-              child: GameCard(
-                game: game,
-                index: index,
-                onTap: () => _navigateToGame(game),
+              color: isOwner ? Colors.red : Colors.orange,
+              child: Icon(
+                isOwner ? Icons.delete : Icons.remove_circle,
+                color: Colors.white,
+                size: 30,
               ),
-            );
-          } else {
-            return GameCard(
+            ),
+            child: GameCard(
               game: game,
               index: index,
               onTap: () => _navigateToGame(game),
-            );
-          }
+            ),
+          );
         },
       ),
     );

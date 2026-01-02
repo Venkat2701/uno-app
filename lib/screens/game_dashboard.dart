@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../models/game.dart';
 import '../providers/game_provider.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/share_game_dialog.dart';
 import 'rounds_page.dart';
 
@@ -55,12 +56,20 @@ class GameDashboard extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.share, color: Colors.white, size: 28),
-                      onPressed: () => showDialog(
-                        context: context,
-                        builder: (context) => ShareGameDialog(game: game),
-                      ),
+                    // Only show share button for games owned by current user
+                    Consumer<AuthProvider>(
+                      builder: (context, authProvider, child) {
+                        final isOwner = game.ownerId == authProvider.user?.uid;
+                        return isOwner
+                            ? IconButton(
+                                icon: const Icon(Icons.share, color: Colors.white, size: 28),
+                                onPressed: () => showDialog(
+                                  context: context,
+                                  builder: (context) => ShareGameDialog(game: game),
+                                ),
+                              )
+                            : const SizedBox(width: 48); // Placeholder to maintain layout
+                      },
                     ),
                   ],
                 ),

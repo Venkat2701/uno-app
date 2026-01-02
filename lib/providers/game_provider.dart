@@ -93,26 +93,44 @@ class GameProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> shareGame(String gameId, List<String> userIds) async {
+  Future<void> shareGame(String gameId, String gameName, String fromUserId, String fromUserName, List<String> userIds) async {
     try {
-      final updates = <String, dynamic>{};
+      print('Sharing game $gameName from $fromUserName to users: $userIds');
       
-      // Ensure all user documents exist before sharing
+      // Create notifications for each user instead of directly sharing
       for (final userId in userIds) {
+        print('Creating notification for user: $userId');
+        
+        // Ensure user document exists
         final userSnapshot = await _database.child('users').child(userId).get();
         if (!userSnapshot.exists) {
           await _database.child('users').child(userId).set({
             'createdGames': {},
-            'sharedGames': {gameId: true},
+            'sharedGames': {},
           });
-        } else {
-          updates['users/$userId/sharedGames/$gameId'] = true;
         }
-        updates['games/$gameId/sharedWith/$userId'] = true;
+        
+        // Create notification using direct database call
+        final notificationRef = _database.child('notifications').push();
+        final notificationData = {
+          'type': 'game_share',
+          'gameId': gameId,
+          'gameName': gameName,
+          'fromUserId': fromUserId,
+          'fromUserName': fromUserName,
+          'toUserId': userId,
+          'createdAt': DateTime.now().millisecondsSinceEpoch,
+          'isRead': false,
+        };
+        
+        print('Creating notification with data: $notificationData');
+        await notificationRef.set(notificationData);
+        print('Notification created successfully for user: $userId');
       }
       
-      await _database.update(updates);
+      print('All notifications created successfully');
     } catch (e) {
+      print('Error sharing game: $e');
       _setError('Failed to share game: $e');
     }
   }
@@ -194,6 +212,22 @@ class GameProvider extends ChangeNotifier {
       await _database.child('games/$gameId/modifiedAt').set(DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
       _setError('Failed to update players: $e');
+    }
+  }
+
+  Future<void> removeSharedGame(String gameId, String userId) async {
+    try {
+      final updates = <String, dynamic>{};
+      
+      // Remove game from user's shared games
+      updates['users/$userId/sharedGames/$gameId'] = null;
+      
+      // Remove user from game's sharedWith list
+      updates['games/$gameId/sharedWith/$userId'] = null;
+      
+      await _database.update(updates);
+    } catch (e) {
+      _setError('Failed to remove shared game: $e');
     }
   }
 
