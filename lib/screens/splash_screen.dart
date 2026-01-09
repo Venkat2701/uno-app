@@ -25,6 +25,12 @@ class _SplashScreenState extends State<SplashScreen> {
     if (mounted) {
       final authProvider = context.read<AuthProvider>();
       
+      // Wait for auth provider to finish loading
+      while (authProvider.isLoading) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (!mounted) return;
+      }
+      
       if (authProvider.isAuthenticated) {
         Navigator.pushReplacement(
           context,

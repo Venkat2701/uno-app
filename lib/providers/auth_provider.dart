@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 import '../models/user.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -11,6 +13,9 @@ class AuthProvider extends ChangeNotifier {
   AppUser? _appUser;
   bool _isLoading = true;
   String? _error;
+  Timer? _inactivityTimer;
+  DateTime? _lastActivity;
+  static const int _inactivityTimeoutMinutes = 30;
 
   User? get user => _user;
   AppUser? get appUser => _appUser;
@@ -19,7 +24,31 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _user != null;
 
   AuthProvider() {
+    _initializeAuth();
+  }
+
+  Future<void> _initializeAuth() async {
     _auth.authStateChanges().listen(_onAuthStateChanged);
+    await _checkStoredSession();
+  }
+
+  Future<void> _checkStoredSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastActivityString = prefs.getString('last_activity');
+    
+    if (lastActivityString != null) {
+      final lastActivity = DateTime.parse(lastActivityString);
+      final now = DateTime.now();
+      final difference = now.difference(lastActivity).inMinutes;
+      
+      if (difference >= _inactivityTimeoutMinutes) {
+        await _clearStoredSession();
+        await _auth.signOut();
+      } else {
+        _updateLastActivity();
+        _startInactivityTimer();
+      }
+    }
   }
 
   Future<void> _onAuthStateChanged(User? user) async {
@@ -29,8 +58,12 @@ class AuthProvider extends ChangeNotifier {
 
     if (user != null) {
       await _loadUserData(user.uid);
+      _updateLastActivity();
+      _startInactivityTimer();
     } else {
       _appUser = null;
+      _stopInactivityTimer();
+      await _clearStoredSession();
     }
 
     _isLoading = false;
@@ -58,6 +91,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
 
       await _auth.signInWithEmailAndPassword(email: email, password: password);
+      _updateLastActivity();
       return true;
     } on FirebaseAuthException catch (e) {
       _error = _getErrorMessage(e.code);
@@ -106,7 +140,49 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    _stopInactivityTimer();
+    await _clearStoredSession();
     await _auth.signOut();
+  }
+
+  void updateActivity() {
+    _updateLastActivity();
+    _resetInactivityTimer();
+  }
+
+  Future<void> _updateLastActivity() async {
+    _lastActivity = DateTime.now();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('last_activity', _lastActivity!.toIso8601String());
+  }
+
+  void _startInactivityTimer() {
+    _stopInactivityTimer();
+    _inactivityTimer = Timer(Duration(minutes: _inactivityTimeoutMinutes), () {
+      logout();
+    });
+  }
+
+  void _stopInactivityTimer() {
+    _inactivityTimer?.cancel();
+    _inactivityTimer = null;
+  }
+
+  void _resetInactivityTimer() {
+    if (_user != null) {
+      _startInactivityTimer();
+    }
+  }
+
+  Future<void> _clearStoredSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('last_activity');
+  }
+
+  @override
+  void dispose() {
+    _stopInactivityTimer();
+    super.dispose();
   }
 
   Future<void> resetPassword(String email) async {

@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../providers/notification_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/notification.dart';
+import '../widgets/activity_tracker.dart';
 import 'home_page.dart';
 import 'notifications_page.dart';
 import 'create_game_page.dart';
@@ -30,137 +31,139 @@ class _MainNavigationState extends State<MainNavigation> {
     print('MainNavigation build called');
     final authProvider = context.read<AuthProvider>();
     
-    return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        children: [
-          const HomePage(),
-          NotificationsPage(onNavigateToGames: () => _onItemTapped(0)),
-        ],
-      ),
-      floatingActionButton: _currentIndex == 0 ? Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF4A90E2).withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: FloatingActionButton(
-          heroTag: "main_fab",
-          onPressed: () {
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) =>
-                    const CreateGamePage(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  return ScaleTransition(
-                    scale: animation.drive(
-                      Tween(begin: 0.0, end: 1.0).chain(
-                        CurveTween(curve: Curves.elasticOut),
-                      ),
-                    ),
-                    child: child,
-                  );
-                },
-              ),
-            );
+    return ActivityTracker(
+      child: Scaffold(
+        body: PageView(
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
           },
-          backgroundColor: const Color(0xFF4A90E2),
-          child: const Icon(Icons.add, color: Colors.white, size: 28),
-        ),
-      ).animate().scale(delay: 800.ms, duration: 400.ms) : null,
-      bottomNavigationBar: Container(
-        height: 80,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
+          children: [
+            const HomePage(),
+            NotificationsPage(onNavigateToGames: () => _onItemTapped(0)),
           ],
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(
-                  icon: Icons.games,
-                  label: 'Games',
-                  index: 0,
-                  isSelected: _currentIndex == 0,
+        floatingActionButton: _currentIndex == 0 ? Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF4A90E2).withOpacity(0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: FloatingActionButton(
+            heroTag: "main_fab",
+            onPressed: () {
+              Navigator.push(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      const CreateGamePage(),
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    return ScaleTransition(
+                      scale: animation.drive(
+                        Tween(begin: 0.0, end: 1.0).chain(
+                          CurveTween(curve: Curves.elasticOut),
+                        ),
+                      ),
+                      child: child,
+                    );
+                  },
                 ),
-                // Bell icon notification button
-                GestureDetector(
-                  onTap: () => _onItemTapped(1),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _currentIndex == 1 ? const Color(0xFF4A90E2).withOpacity(0.1) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Consumer<NotificationProvider>(
-                      builder: (context, notificationProvider, child) {
-                        return StreamBuilder<List<GameNotification>>(
-                          stream: notificationProvider.getUserNotifications(authProvider.user!.uid),
-                          builder: (context, snapshot) {
-                            final unreadCount = snapshot.hasData 
-                                ? snapshot.data!.where((n) => !n.isRead).length 
-                                : 0;
-                            return Stack(
-                              children: [
-                                Icon(
-                                  Icons.notifications,
-                                  color: _currentIndex == 1 ? const Color(0xFF4A90E2) : Colors.grey[600],
-                                  size: 24,
-                                ),
-                                if (unreadCount > 0)
-                                  Positioned(
-                                    right: 0,
-                                    top: 0,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(2),
-                                      decoration: const BoxDecoration(
-                                        color: Colors.red,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      constraints: const BoxConstraints(
-                                        minWidth: 16,
-                                        minHeight: 16,
-                                      ),
-                                      child: Text(
-                                        unreadCount > 9 ? '9+' : unreadCount.toString(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
+              );
+            },
+            backgroundColor: const Color(0xFF4A90E2),
+            child: const Icon(Icons.add, color: Colors.white, size: 28),
+          ),
+        ).animate().scale(delay: 800.ms, duration: 400.ms) : null,
+        bottomNavigationBar: Container(
+          height: 80,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(
+                    icon: Icons.games,
+                    label: 'Games',
+                    index: 0,
+                    isSelected: _currentIndex == 0,
+                  ),
+                  // Bell icon notification button
+                  GestureDetector(
+                    onTap: () => _onItemTapped(1),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _currentIndex == 1 ? const Color(0xFF4A90E2).withOpacity(0.1) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Consumer<NotificationProvider>(
+                        builder: (context, notificationProvider, child) {
+                          return StreamBuilder<List<GameNotification>>(
+                            stream: notificationProvider.getUserNotifications(authProvider.user!.uid),
+                            builder: (context, snapshot) {
+                              final unreadCount = snapshot.hasData 
+                                  ? snapshot.data!.where((n) => !n.isRead).length 
+                                  : 0;
+                              return Stack(
+                                children: [
+                                  Icon(
+                                    Icons.notifications,
+                                    color: _currentIndex == 1 ? const Color(0xFF4A90E2) : Colors.grey[600],
+                                    size: 24,
+                                  ),
+                                  if (unreadCount > 0)
+                                    Positioned(
+                                      right: 0,
+                                      top: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.red,
+                                          shape: BoxShape.circle,
                                         ),
-                                        textAlign: TextAlign.center,
+                                        constraints: const BoxConstraints(
+                                          minWidth: 16,
+                                          minHeight: 16,
+                                        ),
+                                        child: Text(
+                                          unreadCount > 9 ? '9+' : unreadCount.toString(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                              ],
-                            );
-                          },
-                        );
-                      },
+                                ],
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
